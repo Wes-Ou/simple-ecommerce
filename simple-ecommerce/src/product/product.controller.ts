@@ -6,12 +6,13 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from '@prisma/client';
-@Controller('products')
+@Controller('product')
 export class ProductController {
   constructor(private readonly productsService: ProductService) {}
 
@@ -23,14 +24,9 @@ export class ProductController {
 
   //获取所有商品
   @Get()
-  async findAll(): Promise<Product[]> {
-    return this.productsService.findAll();
-  }
-
-  //获取单个商品
-  @Get(':id')
-  async findOne(@Param('id') id: string): Promise<Product> {
-    return this.productsService.findOne(+id);
+  async findAll(@Query('userId') userId: number): Promise<Product[]> {
+    const userIdNumber = Number(userId);
+    return this.productsService.findAll(userIdNumber);
   }
 
   //更新商品

@@ -1,85 +1,118 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm } from 'antd';
-import api from '../services/api'; // 导入封装的API请求
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Select } from 'antd';
+import api from '../services/api';
 
 const ProductListPage = () => {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState([]);  // 存储当前用户的商品列表
+  const [allCategories, setAllCategories] = useState([]);  // 存储所有分类
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
+  const [userId, setUserId] = useState(null);  // 当前用户ID
 
-  // 获取所有商品
   useEffect(() => {
-    fetchProducts();
+    const currentUserId = localStorage.getItem('userId');  // 假设从 localStorage 获取
+    const parsedUserId = currentUserId ? Number(currentUserId) : null;
+
+    if (parsedUserId === null || isNaN(parsedUserId)) {
+      message.error('未找到有效的用户信息');
+      return;
+    }
+
+    setUserId(parsedUserId);
+    fetchProducts(parsedUserId);  // 获取当前用户的商品列表
+    fetchCategories(parsedUserId);  // 获取当前用户的所有分类
   }, []);
 
-  const fetchProducts = async () => {
+  // 获取当前用户的商品
+  const fetchProducts = async (userId) => {
     setLoading(true);
     try {
-      const response = await api.get('/products');
-      setProducts(response.data);
+      const response = await api.get('/product', {
+        params: { userId },  // 传递 userId 获取当前用户的商品
+      });
+      setProducts(response.data);  // 存储商品列表
     } catch (error) {
-      message.error('获取商品失败');
+      message.error('获取商品列表失败');
     }
     setLoading(false);
   };
 
-  // 打开编辑模态框
+  // 获取当前用户的所有分类
+  const fetchCategories = async (userId) => {
+    setLoading(true);
+    try {
+      const response = await api.get('/category/all', {
+        params: { userId },  // 传递 userId 获取当前用户的所有分类
+      });
+      setAllCategories(response.data);  // 存储分类列表
+    } catch (error) {
+      message.error('获取分类列表失败');
+    }
+    setLoading(false);
+  };
+
   const handleEdit = (product) => {
     setEditProduct(product);
     setIsModalVisible(true);
   };
 
-  // 删除商品
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/products/${id}`);
+      await api.delete(`/product/${id}`);  // 删除商品时传递商品id
       message.success('删除成功');
-      fetchProducts();
+      fetchProducts(userId);  // 删除后重新获取商品列表
     } catch (error) {
       message.error('删除失败');
     }
   };
 
-  // 提交编辑的商品信息
   const handleOk = async (values) => {
-    const { name, description, price, stock, categoryId } = values;
+    const { name, price, stock, categoryId } = values;
+
+    if (!userId) {
+      message.error('未找到用户信息');
+      return;
+    }
+
     try {
       if (editProduct) {
-        await api.patch(`/products/${editProduct.id}`, {
+        // 更新商品时传递 userId 和 categoryId
+        await api.patch(`/product/${editProduct.id}`, {
           name,
-          description,
           price,
           stock,
           categoryId,
+          userId,
         });
         message.success('商品更新成功');
       } else {
-        await api.post('/products', {
+        // 创建商品时传递 userId 和 categoryId
+        await api.post('/product', {
           name,
-          description,
           price,
           stock,
           categoryId,
+          userId,
         });
         message.success('商品创建成功');
       }
       setIsModalVisible(false);
-      fetchProducts();
+      fetchProducts(userId);  // 更新后重新获取商品列表
     } catch (error) {
       message.error('操作失败');
     }
   };
 
-  // 商品详情列
+  // 格式化时间函数
+  const formatDate = (date) => {
+    return date ? new Date(date).toLocaleString() : '';  // 返回格式化后的时间
+  };
+
   const columns = [
     {
       title: '商品名称',
       dataIndex: 'name',
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
     },
     {
       title: '价格',
@@ -92,7 +125,17 @@ const ProductListPage = () => {
     {
       title: '分类',
       dataIndex: 'category',
-      render: (category) => category?.name || '未分类',
+      render: (text) => text.name,  // 显示分类名称
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createdAt',
+      render: (text) => formatDate(text),  // 格式化创建时间
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updatedAt',
+      render: (text) => formatDate(text),  // 格式化更新时间
     },
     {
       title: '操作',
@@ -103,7 +146,7 @@ const ProductListPage = () => {
           </Button>
           <Popconfirm
             title="确认删除?"
-            onConfirm={() => handleDelete(record.id)}
+            onConfirm={() => handleDelete(record.id)}  // 删除商品
             okText="删除"
             cancelText="取消"
           >
@@ -121,8 +164,8 @@ const ProductListPage = () => {
       <Button
         type="primary"
         onClick={() => {
-          setEditProduct(null);
-          setIsModalVisible(true);
+          setEditProduct(null);  // 清空编辑商品数据
+          setIsModalVisible(true);  // 显示表单
         }}
         style={{ marginBottom: 16 }}
       >
@@ -131,7 +174,7 @@ const ProductListPage = () => {
       <Table
         rowKey="id"
         columns={columns}
-        dataSource={products}
+        dataSource={products}  // 显示商品列表
         loading={loading}
         pagination={{ pageSize: 10 }}
       />
@@ -142,48 +185,47 @@ const ProductListPage = () => {
         footer={null}
       >
         <Form
-          initialValues={editProduct || {}}
+          initialValues={editProduct ? {
+            name: editProduct.name,
+            price: editProduct.price,
+            stock: editProduct.stock,
+            categoryId: editProduct.categoryId,
+          } : {}}  // 设置表单初始值为当前商品数据
           onFinish={handleOk}
-          layout="vertical"
         >
           <Form.Item
-            label="商品名称"
             name="name"
-            rules={[{ required: true, message: '请输入商品名称' }]}
-          >
+            label="商品名称"
+            rules={[{ required: true, message: '请输入商品名称' }]}>
             <Input />
           </Form.Item>
           <Form.Item
-            label="商品描述"
-            name="description"
-            rules={[{ required: true, message: '请输入商品描述' }]}
-          >
-            <Input.TextArea />
-          </Form.Item>
-          <Form.Item
-            label="商品价格"
             name="price"
-            rules={[{ required: true, message: '请输入商品价格' }]}
-          >
-            <Input type="number" />
+            label="价格"
+            rules={[{ required: true, message: '请输入商品价格' }]}>
+            <Input type="number" min={0} />
           </Form.Item>
           <Form.Item
-            label="商品库存"
             name="stock"
-            rules={[{ required: true, message: '请输入商品库存' }]}
-          >
-            <Input type="number" />
+            label="库存"
+            rules={[{ required: true, message: '请输入商品库存' }]}>
+            <Input type="number" min={0} />
           </Form.Item>
           <Form.Item
-            label="商品分类"
             name="categoryId"
-            rules={[{ required: true, message: '请选择商品分类' }]}
-          >
-            <Input type="number" placeholder="输入分类ID" />
+            label="分类"
+            rules={[{ required: true, message: '请选择商品分类' }]}>
+            <Select placeholder="选择商品分类">
+              {allCategories.map((category) => (
+                <Select.Option key={category.id} value={category.id}>
+                  {category.name}
+                </Select.Option>
+              ))}
+            </Select>
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit">
-              {editProduct ? '更新商品' : '创建商品'}
+            <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
+              提交
             </Button>
           </Form.Item>
         </Form>

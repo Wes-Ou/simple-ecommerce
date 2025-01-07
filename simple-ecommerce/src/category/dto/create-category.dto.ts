@@ -8,4 +8,8 @@ export class CreateCategoryDto {
   @IsInt()
   @IsOptional()
   parentId?: number;
+
+  @IsInt()
+  @IsNotEmpty()
+  userId: number;
 }
