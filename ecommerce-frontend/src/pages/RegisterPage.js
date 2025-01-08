@@ -16,7 +16,7 @@ const RegisterPage = () => {
         email: values.email,
       });
       message.success('注册成功');
-      navigate('/login'); // 注册成功后跳转到登录页面
+      navigate('/login');
     } catch (error) {
       message.error('注册失败');
     }
@@ -53,11 +53,10 @@ const RegisterPage = () => {
             注册
           </Button>
         </Form.Item>
-        {/* 登录页面跳转按钮 */}
         <Form.Item>
           <Button
             type="link"
-            onClick={() => navigate('/login')} // 点击时跳转到登录页面
+            onClick={() => navigate('/login')}
             style={{ width: '100%' }}
           >
             已有账号? 登录

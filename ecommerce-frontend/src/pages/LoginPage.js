@@ -7,12 +7,11 @@ const LoginPage = ({ setIsAuthenticated }) => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // 检查用户是否已登录，如果是则直接跳转
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
     if (token && userId) {
-      navigate('/products'); // 如果已登录，跳转到产品页面
+      navigate('/category-product');
     }
   }, [navigate]);
 
@@ -27,21 +26,19 @@ const LoginPage = ({ setIsAuthenticated }) => {
       const { access_token, userId } = response.data;
 
       if (access_token && userId) {
-        // 存储 token 和 userId
         localStorage.setItem('token', access_token);
         localStorage.setItem('userId', userId);
         
-        // 更新认证状态
         setIsAuthenticated(true);
         
         message.success('登录成功');
-        navigate('/products'); // 登录后跳转到产品页面
+        navigate('/category-product');
       } else {
         message.error('未获取到有效的用户信息');
       }
     } catch (error) {
       message.error('登录失败，请检查用户名和密码');
-      console.error('Login error:', error); // 输出详细错误信息
+      console.error('Login error:', error);
     }
     setLoading(false);
   };
@@ -67,11 +64,10 @@ const LoginPage = ({ setIsAuthenticated }) => {
             登录
           </Button>
         </Form.Item>
-        {/* 注册页面跳转按钮 */}
         <Form.Item>
           <Button
             type="link"
-            onClick={() => navigate('/register')} // 点击时跳转到注册页面
+            onClick={() => navigate('/register')}
             style={{ width: '100%' }}>
             注册账号
           </Button>
