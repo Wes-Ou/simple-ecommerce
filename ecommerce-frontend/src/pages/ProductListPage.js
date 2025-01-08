@@ -6,12 +6,12 @@ const ProductListPage = () => {
   const [products, setProducts] = useState([]);  // 存储当前用户的商品列表
   const [allCategories, setAllCategories] = useState([]);  // 存储所有分类
   const [loading, setLoading] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editProduct, setEditProduct] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState(null);  // 当前编辑的商品
   const [userId, setUserId] = useState(null);  // 当前用户ID
 
   useEffect(() => {
-    const currentUserId = localStorage.getItem('userId');  // 假设从 localStorage 获取
+    const currentUserId = localStorage.getItem('userId');
     const parsedUserId = currentUserId ? Number(currentUserId) : null;
 
     if (parsedUserId === null || isNaN(parsedUserId)) {
@@ -52,9 +52,19 @@ const ProductListPage = () => {
     setLoading(false);
   };
 
+  // 获取商品详细信息
+  const fetchProductDetails = async (id) => {
+    try {
+      const response = await api.get(`/product/${id}`);
+      setEditProduct(response.data);  // 填充商品数据
+      setIsModalOpen(true);  // 显示编辑表单
+    } catch (error) {
+      message.error('获取商品详情失败');
+    }
+  };
+
   const handleEdit = (product) => {
-    setEditProduct(product);
-    setIsModalVisible(true);
+    fetchProductDetails(product.id);  // 点击编辑时获取商品详细信息
   };
 
   const handleDelete = async (id) => {
@@ -68,7 +78,7 @@ const ProductListPage = () => {
   };
 
   const handleOk = async (values) => {
-    const { name, price, stock, categoryId } = values;
+    const { name, price, stock, categoryId, description } = values;
 
     if (!userId) {
       message.error('未找到用户信息');
@@ -77,36 +87,36 @@ const ProductListPage = () => {
 
     try {
       if (editProduct) {
-        // 更新商品时传递 userId 和 categoryId
         await api.patch(`/product/${editProduct.id}`, {
           name,
           price,
           stock,
           categoryId,
+          description,
           userId,
         });
         message.success('商品更新成功');
       } else {
-        // 创建商品时传递 userId 和 categoryId
         await api.post('/product', {
           name,
           price,
           stock,
           categoryId,
+          description,
           userId,
         });
         message.success('商品创建成功');
       }
-      setIsModalVisible(false);
-      fetchProducts(userId);  // 更新后重新获取商品列表
+      setIsModalOpen(false);
+      setEditProduct(null);
+      fetchProducts(userId);
     } catch (error) {
       message.error('操作失败');
     }
   };
 
-  // 格式化时间函数
   const formatDate = (date) => {
-    return date ? new Date(date).toLocaleString() : '';  // 返回格式化后的时间
+    return date ? new Date(date).toLocaleString() : '';
   };
 
   const columns = [
@@ -125,17 +135,17 @@ const ProductListPage = () => {
     {
       title: '分类',
       dataIndex: 'category',
-      render: (text) => text.name,  // 显示分类名称
+      render: (text) => text.name,
     },
     {
       title: '创建时间',
       dataIndex: 'createdAt',
-      render: (text) => formatDate(text),  // 格式化创建时间
+      render: (text) => formatDate(text),
     },
     {
       title: '更新时间',
       dataIndex: 'updatedAt',
-      render: (text) => formatDate(text),  // 格式化更新时间
+      render: (text) => formatDate(text),
     },
     {
       title: '操作',
@@ -146,7 +156,7 @@ const ProductListPage = () => {
           </Button>
           <Popconfirm
             title="确认删除?"
-            onConfirm={() => handleDelete(record.id)}  // 删除商品
+            onConfirm={() => handleDelete(record.id)}
             okText="删除"
             cancelText="取消"
           >
@@ -159,13 +169,24 @@ const ProductListPage = () => {
     },
   ];
 
+  // 配置 expandable，展开行显示商品描述
+  const expandable = {
+    expandedRowRender: (record) => (
+      <div>
+        <p>商品描述：{record.description}</p>
+      </div>
+    ),
+    expandRowByClick: true, // 允许通过点击行来展开
+    expandIcon: () => null, // 禁用展开图标
+  };
+
   return (
     <div>
       <Button
         type="primary"
         onClick={() => {
-          setEditProduct(null);  // 清空编辑商品数据
-          setIsModalVisible(true);  // 显示表单
+          setEditProduct(null);
+          setIsModalOpen(true);
         }}
         style={{ marginBottom: 16 }}
       >
@@ -174,14 +195,18 @@ const ProductListPage = () => {
       <Table
         rowKey="id"
         columns={columns}
-        dataSource={products}  // 显示商品列表
+        dataSource={products}
         loading={loading}
         pagination={{ pageSize: 10 }}
+        expandable={expandable}  // 添加 expandable 配置
       />
       <Modal
         title={editProduct ? '编辑商品' : '添加商品'}
-        visible={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        open={isModalOpen}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setEditProduct(null);
+        }}
         footer={null}
       >
         <Form
@@ -190,31 +215,37 @@ const ProductListPage = () => {
             price: editProduct.price,
             stock: editProduct.stock,
             categoryId: editProduct.categoryId,
-          } : {}}  // 设置表单初始值为当前商品数据
+            description: editProduct.description,
+          } : {}}
           onFinish={handleOk}
+          key={editProduct ? editProduct.id : 'new'}
         >
           <Form.Item
             name="name"
             label="商品名称"
-            rules={[{ required: true, message: '请输入商品名称' }]}>
-            <Input />
+            rules={[{ required: true, message: '请输入商品名称' }]} 
+          >
+            <Input placeholder='请输入商品名称' />
           </Form.Item>
           <Form.Item
             name="price"
             label="价格"
-            rules={[{ required: true, message: '请输入商品价格' }]}>
-            <Input type="number" min={0} />
+            rules={[{ required: true, message: '请输入商品价格' }]} 
+          >
+            <Input type="number" min={0} placeholder='请输入商品价格' />
           </Form.Item>
           <Form.Item
             name="stock"
             label="库存"
-            rules={[{ required: true, message: '请输入商品库存' }]}>
-            <Input type="number" min={0} />
+            rules={[{ required: true, message: '请输入商品库存' }]} 
+          >
+            <Input type="number" min={0} placeholder='请输入商品库存数量' />
           </Form.Item>
           <Form.Item
             name="categoryId"
             label="分类"
-            rules={[{ required: true, message: '请选择商品分类' }]}>
+            rules={[{ required: true, message: '请选择商品分类' }]} 
+          >
             <Select placeholder="选择商品分类">
               {allCategories.map((category) => (
                 <Select.Option key={category.id} value={category.id}>
@@ -222,6 +253,13 @@ const ProductListPage = () => {
                 </Select.Option>
               ))}
             </Select>
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label="商品描述"
+            rules={[{ required: true, message: '请输入商品描述' }]} 
+          >
+            <Input.TextArea placeholder="请输入商品描述" rows={4} />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit" style={{ width: '100%' }}>

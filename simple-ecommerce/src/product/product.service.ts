@@ -66,6 +66,14 @@ export class ProductService {
     });
   }
 
+  // 根据id查询商品
+  async findOne(id: number) {
+    return this.prisma.product.findUnique({
+      where: { id: id },
+      include: { category: true },
+    });
+  }
+
   // 根据id更新商品
   async update(id: number, updateProductDto: Prisma.ProductUpdateInput) {
     return this.prisma.product.update({

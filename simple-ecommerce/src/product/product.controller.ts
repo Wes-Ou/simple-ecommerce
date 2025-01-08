@@ -29,6 +29,12 @@ export class ProductController {
     return this.productsService.findAll(userIdNumber);
   }
 
+  //获取单个商品
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<Product> {
+    return this.productsService.findOne(+id);
+  }
+
   //更新商品
   @Patch(':id')
   async update(
