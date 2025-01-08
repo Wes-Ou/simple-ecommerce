@@ -66,6 +66,14 @@ export class ProductService {
     });
   }
 
+  // 根据分类ID查询商品
+  async findCategory(categoryId: number) {
+    return this.prisma.product.findMany({
+      where: { categoryId: categoryId },
+      include: { category: true },
+    });
+  }
+
   // 根据id查询商品
   async findOne(id: number) {
     return this.prisma.product.findUnique({

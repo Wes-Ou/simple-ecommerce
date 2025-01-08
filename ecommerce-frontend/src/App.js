@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProductListPage from './pages/ProductListPage';
 import CategoryListPage from './pages/CategoryListPage';
+import CategoryProductPage from './pages/CategoryProductPage';  // 导入新的商品展示页面
 
 const { Sider, Content } = Layout;
 
@@ -35,7 +36,17 @@ function App() {
       <Layout style={{ minHeight: '100vh' }}>
         {/* 只有在用户登录后才显示 Sider */}
         {isAuthenticated && (
-          <Sider width={200} className="site-layout-background">
+          <Sider
+            width={200}
+            className="site-layout-background"
+            style={{
+              position: 'fixed', // 固定左侧
+              height: '100vh', // 使侧边栏的高度与视口一致
+              top: 0, // 顶部对齐
+              left: 0, // 左对齐
+              zIndex: 1000, // 确保Sider不被其他内容覆盖
+            }}
+          >
             <Menu
               mode="inline"
               style={{ height: '100%', borderRight: 0 }}
@@ -46,6 +57,10 @@ function App() {
               </Menu.Item>
               <Menu.Item key="2">
                 <Link to="/categories">分类管理</Link>
+              </Menu.Item>
+              {/* 添加商品展示菜单项 */}
+              <Menu.Item key="3">
+                <Link to="/category-product">商品展示</Link>
               </Menu.Item>
             </Menu>
             {/* 退出按钮 */}
@@ -64,7 +79,7 @@ function App() {
           </Sider>
         )}
 
-        <Layout style={{ padding: '0 24px 24px' }}>
+        <Layout style={{ marginLeft: isAuthenticated ? 200 : 0, padding: '0 24px 24px' }}>
           <Content
             style={{
               padding: 24,
@@ -92,6 +107,17 @@ function App() {
                 element={
                   isAuthenticated ? (
                     <CategoryListPage />
+                  ) : (
+                    <Navigate to="/login" />
+                  )
+                }
+              />
+              {/* 添加商品展示页面路由 */}
+              <Route
+                path="/category-product"
+                element={
+                  isAuthenticated ? (
+                    <CategoryProductPage />
                   ) : (
                     <Navigate to="/login" />
                   )

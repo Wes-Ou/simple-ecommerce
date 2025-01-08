@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Select } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Popconfirm, Modal, Form, Input, Select, message } from 'antd';
 import api from '../services/api';
 
 const CategoryListPage = () => {
   const [categories, setCategories] = useState([]);  // 存储当前用户的顶级分类
   const [allCategories, setAllCategories] = useState([]);  // 存储当前用户的所有分类
   const [loading, setLoading] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editCategory, setEditCategory] = useState(null);
   const [userId, setUserId] = useState(null);  // 当前用户ID
   const [expandedRowKeys, setExpandedRowKeys] = useState([]);  // 用于存储展开状态的分类的id
@@ -55,7 +55,7 @@ const CategoryListPage = () => {
 
   const handleEdit = (category) => {
     setEditCategory(category);
-    setIsModalVisible(true);
+    setIsModalOpen(true);  // 修改为 setIsModalOpen
   };
 
   const handleDelete = async (id) => {
@@ -94,7 +94,7 @@ const CategoryListPage = () => {
         });
         message.success('分类创建成功');
       }
-      setIsModalVisible(false);
+      setIsModalOpen(false);  // 修改为 setIsModalOpen
       fetchTopLevelCategories(userId);  // 更新后重新获取顶级分类
       fetchAllCategories(userId);  // 更新后重新获取所有分类
     } catch (error) {
@@ -150,7 +150,10 @@ const CategoryListPage = () => {
           expandRowByClick: true,  // 点击展开行
           expandedRowKeys: expandedRowKeys.filter(key => children.some(child => child.id === key)),  // 只展开当前分类的子分类
           onExpand: (expanded, subRecord) => handleExpand(expanded, subRecord),  // 处理子分类展开状态
+          expandIconColumnIndex: -1,  // 禁用左侧展开图标
+          expandIcon: false,  // 禁用展开图标
         }}
+        rowKey="id"  // 确保每个子分类行有唯一的 key
       />
     );
   };
@@ -163,14 +166,6 @@ const CategoryListPage = () => {
       if (expanded) {
         // 展开时添加当前分类id
         newExpandedRowKeys.push(record.id);
-
-        // 展开时还需要展开子分类的子分类
-        const children = getChildren(record.id);
-        children.forEach(child => {
-          if (!newExpandedRowKeys.includes(child.id)) {
-            newExpandedRowKeys.push(child.id);  // 展开子分类的子分类
-          }
-        });
       } else {
         // 收起时移除当前分类id
         newExpandedRowKeys = newExpandedRowKeys.filter((id) => id !== record.id);
@@ -223,7 +218,7 @@ const CategoryListPage = () => {
         type="primary"
         onClick={() => {
           setEditCategory(null);
-          setIsModalVisible(true);
+          setIsModalOpen(true);  // 修改为 setIsModalOpen
         }}
         style={{ marginBottom: 16 }}
       >
@@ -237,19 +232,21 @@ const CategoryListPage = () => {
         pagination={{ pageSize: 10 }}
         expandable={{
           expandedRowRender,  // 显示子分类
-          expandRowByClick: true,  // 点击展开行
+          expandRowByClick: true,  // 点击展开
           expandedRowKeys: expandedRowKeys,  // 控制展开的行
-          onExpand: (expanded, record) => handleExpand(expanded, record),  // 点击时更新展开状态
+          onExpand: (expanded, record) => handleExpand(expanded, record),  // 处理展开状态
+          expandIconColumnIndex: -1,  // 禁用左侧展开图标
+          expandIcon: false,  // 禁用展开图标
         }}
       />
       <Modal
         title={editCategory ? '编辑分类' : '添加分类'}
-        visible={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        visible={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}  // 修改为 setIsModalOpen
         footer={null}
       >
         <Form
-          initialValues={editCategory ? { name: editCategory.name, parentId: editCategory.parentId } : {}}
+          initialValues={editCategory || {}}
           onFinish={handleOk}
         >
           <Form.Item
@@ -260,9 +257,12 @@ const CategoryListPage = () => {
             <Input />
           </Form.Item>
           <Form.Item name="parentId" label="父分类">
-            <Select placeholder="选择父分类">
-              <Select.Option value={null}>无父分类</Select.Option>
-              {allCategories.map((category) => (
+            <Select
+              placeholder="请选择父分类"
+              defaultValue={editCategory?.parentId || null}
+            >
+              <Select.Option value={null}>无</Select.Option>
+              {categories.map((category) => (
                 <Select.Option key={category.id} value={category.id}>
                   {category.name}
                 </Select.Option>
@@ -270,7 +270,7 @@ const CategoryListPage = () => {
             </Select>
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
+            <Button type="primary" htmlType="submit">
               提交
             </Button>
           </Form.Item>

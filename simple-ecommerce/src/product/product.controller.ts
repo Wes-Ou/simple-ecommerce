@@ -29,6 +29,15 @@ export class ProductController {
     return this.productsService.findAll(userIdNumber);
   }
 
+  //根据分类查询商品
+  @Get('category/:categoryId')
+  async findCategory(
+    @Param('categoryId') categoryId: string,
+  ): Promise<Product[]> {
+    const categoryIdNumber = Number(categoryId);
+    return this.productsService.findCategory(categoryIdNumber);
+  }
+
   //获取单个商品
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<Product> {
