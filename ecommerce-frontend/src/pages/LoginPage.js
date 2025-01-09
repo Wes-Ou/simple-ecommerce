@@ -37,38 +37,45 @@ const LoginPage = ({ setIsAuthenticated }) => {
         message.error('未获取到有效的用户信息');
       }
     } catch (error) {
+      if (error.response) {
+        message.error(error.response.data.message);
+      } else {
       message.error('登录失败，请检查用户名和密码');
       console.error('Login error:', error);
+      }
     }
     setLoading(false);
   };
 
   return (
-    <div style={{ width: 300, margin: '100px auto' }}>
-      <h2>登录</h2>
-      <Form onFinish={onFinish}>
+    <div style={{ width: 400, height: 400, margin: '100px auto' }}>
+      <h1 style={{ fontSize: 48, textAlign: 'center' }}>登录</h1>
+      <Form onFinish={onFinish} style={{ fontSize: '32px',margin: '10px auto' }}>
         <Form.Item
           label="用户名"
           name="username"
+          labelCol={{ style: { fontSize: '32px' }}}
           rules={[{ required: true, message: '请输入用户名' }]}>
-          <Input />
+          
+          <Input style={{ fontSize: '32px' }}/>
         </Form.Item>
         <Form.Item
           label="密码"
           name="password"
+          labelCol={{ style: { fontSize: '32px' }}}
           rules={[{ required: true, message: '请输入密码' }]}>
-          <Input.Password />
+          <Input.Password style={{ fontSize: '32px' }}/>
         </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit" block loading={loading}>
+        <Form.Item style={{ textAlign: 'center' }}>
+          <Button type="primary" htmlType="submit" block loading={loading} style={{ width: '80%', fontSize: '32px' }}>
             登录
           </Button>
         </Form.Item>
-        <Form.Item>
+        <Form.Item style={{ textAlign: 'center' }}>
           <Button
             type="link"
             onClick={() => navigate('/register')}
-            style={{ width: '100%' }}>
+            style={{ width: '80%', fontSize: '32px' }}>
             注册账号
           </Button>
         </Form.Item>
