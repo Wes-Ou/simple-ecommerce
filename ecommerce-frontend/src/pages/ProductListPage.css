@@ -1,7 +1,7 @@
 .product-page {
     padding: 20px;
     background-color: #f1fdf2;
-    min-height: 100vh;
+    min-height: auto;
     font-family: 'Arial', sans-serif;
 }
 
