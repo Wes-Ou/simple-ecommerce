@@ -230,7 +230,7 @@ const ProductListPage = () => {
             label="价格"
             rules={[{ required: true, message: '请输入商品价格' }]}
           >
-            <Input type="number" min={0} placeholder="请输入商品价格" />
+            <Input type="float" min={0} placeholder="请输入商品价格" />
           </Form.Item>
           <Form.Item
             name="stock"

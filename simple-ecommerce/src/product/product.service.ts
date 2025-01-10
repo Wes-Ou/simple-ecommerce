@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Prisma, Product } from '@prisma/client';
+import { Product } from '@prisma/client';
 import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 @Injectable()
@@ -75,10 +76,53 @@ export class ProductService {
     });
   }
 
-  async update(id: number, updateProductDto: Prisma.ProductUpdateInput) {
+  async update(
+    id: number,
+    updateProductDto: UpdateProductDto,
+  ): Promise<Product> {
+    const { price, stock, categoryId, userId } = updateProductDto;
+
+    if (price === null || price === undefined || isNaN(price) || price <= 0) {
+      throw new HttpException('无效的价格', HttpStatus.BAD_REQUEST);
+    }
+
+    if (stock === null || stock === undefined || isNaN(stock) || stock < 0) {
+      throw new HttpException('无效的库存', HttpStatus.BAD_REQUEST);
+    }
+
+    if (
+      categoryId === null ||
+      categoryId === undefined ||
+      isNaN(categoryId) ||
+      categoryId <= 0
+    ) {
+      throw new HttpException('无效的分类ID', HttpStatus.BAD_REQUEST);
+    }
+
+    if (
+      userId === null ||
+      userId === undefined ||
+      isNaN(userId) ||
+      userId <= 0
+    ) {
+      throw new HttpException('无效的用户ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const parsedPrice = parseFloat(price.toString());
+    const parsedStock = parseInt(stock.toString(), 10);
+    const parsedCategoryId = parseInt(categoryId.toString(), 10);
+    const parsedUserId = parseInt(userId.toString(), 10);
+
     return this.prisma.product.update({
       where: { id: id },
-      data: updateProductDto,
+      data: {
+        name: updateProductDto.name,
+        description: updateProductDto.description,
+        price: parsedPrice,
+        stock: parsedStock,
+        category: { connect: { id: parsedCategoryId } },
+        user: { connect: { id: parsedUserId } },
+      },
     });
   }
 
